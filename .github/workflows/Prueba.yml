@@ -1,0 +1,52 @@
+name: Build APK from ZIP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Sacar los archivos del repositorio (incluido tu ZIP)
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      # 2. Descomprimir el archivo que ya está en el repo
+      - name: Unzip Project
+        run: |
+          # Descomprime tu archivo
+          unzip sponsorflow-nexus.zip
+          
+          # Si el zip creó una carpeta llamada 'sponsorflow-nexus', mueve su contenido a la raíz
+          if [ -d "sponsorflow-nexus" ]; then
+            mv sponsorflow-nexus/* .
+            rm -rf sponsorflow-nexus
+          fi
+          
+          # Verificamos que esté el archivo gradlew
+          ls -la
+
+      # 3. Configurar Java 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      # 4. Configurar Android SDK (Automático)
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 5. Dar permisos y Compilar
+      - name: Build Debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      # 6. Subir el APK para que lo descargues
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SponsorFlow-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
